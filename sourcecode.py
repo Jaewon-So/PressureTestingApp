@@ -8,8 +8,13 @@ import time
 import u3
 d = u3.U3()
 
+
 # Global variables
-TEST_TIME = 30 # This sets the test time
+TEST_TIME = 30          # This sets the test time in seconds, 
+                        # You can change the  test time as you want
+MAX_PSI_FOR_SENSOR = 300 # 300 PSI is the max psi that our team's pressure transducer can measure.
+                         # You can change this value with the max psi that your pressure trasndcuer can measure.
+HOLD_PSI = 40
 
 # (Components)    (LabJack)     (Relay)
 #   pump          	FIO4    	input4 
@@ -17,32 +22,34 @@ TEST_TIME = 30 # This sets the test time
 #   s2	            FIO6	    input6  
 #   pressure trans  AIN0        -
 
-# 1. Fill:          on: pump, s1, s2, 
-# 2. Pressurize ? 
-
 
 # converting voltage to PSI 
 def convert(x):
     psi = 0
     if x<0.5:   # if voltage is lower than 0.5V, then PSI = 0 (which is min PSI)
         psi = 0
-    elif x >= 4.5: # if voltage is higher than 4.5V, then PSI = 100 (which is max PSI)
-        psi = 300
+    elif x >= 4.5: # if voltage is higher than 4.5V, then PSI is max)
+        psi = MAX_PSI_FOR_SENSOR
     else:  # else, the voltage and psi are in linear (from Manual: 0 psi = 0.5V, 50 psi = 2.5V, 100 psi = 4.5V)
-        psi = (x-0.5)/0.0133
+        psi = (x-0.5)/(4/MAX_PSI_FOR_SENSOR)
     return psi
 
 
-# averaging voltage, psi
+# averaging voltage, psi for every second
 def avg():
     volt = 0
     psi = 0
     
     for i in range(10): # get psi data every 0.1 s, and collect 10 of it then average it
-       volt += d.getAIN(0)
+       volt += d.getAIN(0)  #It's reading the data from AIN0 port. Make sure to check your pressure transducer is connected to AIN0 port.
        psi += convert(d.getAIN(0))
        time.sleep(0.1) # 0.1s sleep
     return [volt/10, psi/10]
+
+# read the psi for every 0.01 second
+def read_psi():
+    psi=convert(d.getAIN(0))
+    return psi
 
 
 
@@ -106,7 +113,7 @@ class MyGUI(QMainWindow):
         self.chart.setTitle("Pressure Data Plot")
 
         self.axisX = QValueAxis()   # X axis
-        self.axisX.setRange(0,30)   # 0-30 seconds
+        self.axisX.setRange(0,TEST_TIME)   # 0-30 seconds
         self.axisX.setTitleText("Time (s)")
 
         self.axisY = QValueAxis()   # Y axis
@@ -242,19 +249,32 @@ class MyGUI(QMainWindow):
         d.setFIOState(5, state=0)   # S1      FIO5 off
         d.setFIOState(6, state=0)   # S2      FIO6 off
 
-
+        
         #pressureize
+        # d.setFIOState(4, state=1)   # PUMP    FIO4 on
+        # d.setFIOState(5, state=1)   # S1      FIO5 on
+        # d.setFIOState(6, state=0)   # S2      FIO6 off
+
+        # time.sleep(0.48)   # 0.4s =>10 psi, 0.46s => 15psi, 0.5s => 20 psi, 
+
+        # d.setFIOState(4, state=0)   # PUMP    FIO4 on
+        # d.setFIOState(5, state=0)   # S1      FIO5 off
+        # d.setFIOState(6, state=0)   # S2      FIO6 off
+
+        
         d.setFIOState(4, state=1)   # PUMP    FIO4 on
         d.setFIOState(5, state=1)   # S1      FIO5 on
         d.setFIOState(6, state=0)   # S2      FIO6 off
 
-        time.sleep(0.48)   # 0.4s =>10 psi, 0.46s => 15psi, 0.5s => 20 psi, 
+        current_psi = 0
+        while (current_psi < HOLD_PSI-28):
+            current_psi=read_psi()
 
         d.setFIOState(4, state=0)   # PUMP    FIO4 on
         d.setFIOState(5, state=0)   # S1      FIO5 off
         d.setFIOState(6, state=0)   # S2      FIO6 off
 
-        
+
         self.label_stat1_2.setText("OFF")
         self.label_stat2_2.setText("OFF")
         self.label_stat3_2.setText("OFF")
@@ -296,6 +316,8 @@ class MyGUI(QMainWindow):
         #d.setFIOState(4, state=1)   # PUMP    FIO4 on 
         #d.setFIOState(6, state=1)   # S3      FIO6 on
 
+
+        # #AVG_PSI
         t = 0
         while t<=TEST_TIME:    #change time
             avg_volt_psi = avg()
@@ -311,6 +333,24 @@ class MyGUI(QMainWindow):
             self.data_list.append(psi)          #add psi data to data_list
             
             t+=1
+
+        # t=0
+        # while t<TEST_TIME*100:
+        #     # Read psi every 0.01s without averaging
+        #     fast_psi = read_psi()  
+
+        #     self.series.append(t,fast_psi)
+        #     self.label_psi.setText("%.2f" % fast_psi)
+
+        #     self.chart.addSeries(self.series)   #update chart
+        #     self.series.attachAxis(self.axisX)
+        #     self.series.attachAxis(self.axisY)           
+        #     qApp.processEvents()
+        #     self.data_list.append(fast_psi)          #add psi data to data_list
+            
+        #     t+=1
+
+
 
         # Stop: s2, s3, pump on
         #d.setFIOState(4, state=0)   # PUMP    FIO4 off
