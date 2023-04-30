@@ -14,7 +14,7 @@ TEST_TIME = 30          # This sets the test time in seconds,
                         # You can change the  test time as you want
 MAX_PSI_FOR_SENSOR = 300 # 300 PSI is the max psi that our team's pressure transducer can measure.
                          # You can change this value with the max psi that your pressure trasndcuer can measure.
-HOLD_PSI = 40
+HOLD_PSI = 40           # 40 PSI is where we want to hold.
 
 # (Components)    (LabJack)     (Relay)
 #   pump          	FIO4    	input4 
