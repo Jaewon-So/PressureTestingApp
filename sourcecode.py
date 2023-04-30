@@ -113,11 +113,11 @@ class MyGUI(QMainWindow):
         self.chart.setTitle("Pressure Data Plot")
 
         self.axisX = QValueAxis()   # X axis
-        self.axisX.setRange(0,TEST_TIME)   # 0-30 seconds
+        self.axisX.setRange(0,TEST_TIME)   # 0 ~ 'TEST_TIME' seconds
         self.axisX.setTitleText("Time (s)")
 
         self.axisY = QValueAxis()   # Y axis
-        self.axisY.setRange(0,50)   # 0-50 psi
+        self.axisY.setRange(0,MAX_PSI_FOR_SENSOR)   # 0 ~ 'MAX_PSI_FOR_SENSOR' psi
         self.axisY.setTitleText("Pressure (psi)")
 
         self.chart.setAxisX(self.axisX)
@@ -244,30 +244,19 @@ class MyGUI(QMainWindow):
             self.progressBar_fill.setValue(x)
             x+=1
 
-        # Stop: s1, s3, pump off
+        # Stop: s1, s2, pump off
         d.setFIOState(4, state=0)   # PUMP    FIO4 off 
         d.setFIOState(5, state=0)   # S1      FIO5 off
         d.setFIOState(6, state=0)   # S2      FIO6 off
 
         
-        #pressureize
-        # d.setFIOState(4, state=1)   # PUMP    FIO4 on
-        # d.setFIOState(5, state=1)   # S1      FIO5 on
-        # d.setFIOState(6, state=0)   # S2      FIO6 off
-
-        # time.sleep(0.48)   # 0.4s =>10 psi, 0.46s => 15psi, 0.5s => 20 psi, 
-
-        # d.setFIOState(4, state=0)   # PUMP    FIO4 on
-        # d.setFIOState(5, state=0)   # S1      FIO5 off
-        # d.setFIOState(6, state=0)   # S2      FIO6 off
-
-        
+        # Pressurize: s1 & pump on, s2 off
         d.setFIOState(4, state=1)   # PUMP    FIO4 on
         d.setFIOState(5, state=1)   # S1      FIO5 on
         d.setFIOState(6, state=0)   # S2      FIO6 off
 
         current_psi = 0
-        while (current_psi < HOLD_PSI-28):
+        while (current_psi < HOLD_PSI):
             current_psi=read_psi()
 
         d.setFIOState(4, state=0)   # PUMP    FIO4 on
@@ -312,11 +301,7 @@ class MyGUI(QMainWindow):
     def test(self):     # Test Button
         self.series = QLineSeries()
 
-        # Pressurize: s2, s3, pump on
-        #d.setFIOState(4, state=1)   # PUMP    FIO4 on 
-        #d.setFIOState(6, state=1)   # S3      FIO6 on
-
-
+       
         # #AVG_PSI
         t = 0
         while t<=TEST_TIME:    #change time
@@ -333,28 +318,6 @@ class MyGUI(QMainWindow):
             self.data_list.append(psi)          #add psi data to data_list
             
             t+=1
-
-        # t=0
-        # while t<TEST_TIME*100:
-        #     # Read psi every 0.01s without averaging
-        #     fast_psi = read_psi()  
-
-        #     self.series.append(t,fast_psi)
-        #     self.label_psi.setText("%.2f" % fast_psi)
-
-        #     self.chart.addSeries(self.series)   #update chart
-        #     self.series.attachAxis(self.axisX)
-        #     self.series.attachAxis(self.axisY)           
-        #     qApp.processEvents()
-        #     self.data_list.append(fast_psi)          #add psi data to data_list
-            
-        #     t+=1
-
-
-
-        # Stop: s2, s3, pump on
-        #d.setFIOState(4, state=0)   # PUMP    FIO4 off
-        #d.setFIOState(6, state=0)   # S3      FIO6 off
 
         self.msgBox_test = QMessageBox()
         self.msgBox_test.setIcon(QMessageBox.Information)
@@ -382,38 +345,8 @@ class MyGUI(QMainWindow):
         self.msgBox.setText("Pressure data is saved in\n\'C:/Users/Admin/Downloads/pressure_data.csv\'")
         self.msgBox.exec()
 
-    # def setTestTime(self):  # Set Button
-    #     self.TEST_TIME = self.spinBox_2.value()
-
-    #     self.chart = QChart()                                   #6. Chart settings
-    #     self.chart.setTitle("Pressure Data Plot")
-
-    #     self.axisX = QValueAxis()   # X axis
-    #     self.axisX.rangeChanged(0,self.TEST_TIME)   # 0-60 seconds
-    #     self.axisX.setTitleText("Time (s)")
-
-    #     self.axisY = QValueAxis()   # Y axis
-    #     self.axisY.setRange(0,10)   # 0-10 psi
-    #     self.axisY.setTitleText("Pressure (psi)")
-
-    #     self.chart.setAxisX(self.axisX)
-    #     self.chart.setAxisY(self.axisY)
-
-    #     w_graph = self.horizontalFrame_graph.width()
-    #     h_graph = self.horizontalFrame_graph.height()
-
-    #     self.chart_view = QChartView(self.chart)
-    #     self.chart_view.setFixedWidth(w_graph)
-    #     self.chart_view.setFixedHeight(h_graph)
-    #     self.chart_view.setParent(self.horizontalFrame_graph)
-    #     self.chart_view.repaint()
-    #     self.chart_view.update()
-    #     qApp.processEvents()
-
-    #     self.pushButton_save.setEnabled(True)
+  
         
-
-
     # 4. Functions in Manual Control page
     def back3(self):    # Back Button 
         self.tabWidget.setCurrentIndex(2)
